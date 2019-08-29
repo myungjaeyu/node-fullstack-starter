@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  db:
+    image: "postgres:9"
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  api:
+    build: ./api
+    volumes:
+      - ./api:/usr/server
+    expose:
+      - "3001"
+    links:
+      - db
+    environment:
+      PORT: 3001
+      VIRTUAL_HOST: api.testdomain.local
+      DB_CONNECTION: postgres://postgres:postgres@db:5432/postgres
+
+  ssr:
+    build: ./ssr
+    volumes:
+      - ./ssr:/usr/server
+    expose:
+      - "3000"      
+    environment:
+      PORT: 3000
+      VIRTUAL_HOST: testdomain.local
